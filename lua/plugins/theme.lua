@@ -1,6 +1,22 @@
 return {
 	-- Tokyo Night Colorscheme
 	{
+		'rebelot/kanagawa.nvim',
+		theme = 'wave',
+		lazy = false,
+		priority = 999,
+		config = function()
+			require('kanagawa').setup({
+				transparent = true,
+				terminalColors = true,
+				theme = 'dragon',
+				undercurl = true,
+				keywordStyle = { italic = true },
+			})
+			vim.cmd.colorscheme('kanagawa')
+		end
+	},
+	{
 		"folke/tokyonight.nvim",
 		lazy = false, -- Load immediately since it's our main colorscheme
 		priority = 1000, -- Load before other plugins
