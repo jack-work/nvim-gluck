@@ -90,9 +90,6 @@ return {
 				vim.bo.syntax = ''
 				vim.wo.signcolumn = 'no'
 				vim.wo.spell = false
-				-- Set terminal-specific options
-				vim.wo.number = false
-				vim.wo.relativenumber = false
 			end)
 		end
 
@@ -126,8 +123,6 @@ return {
 				vim.bo.syntax = ''
 				vim.wo.signcolumn = 'no'
 				vim.wo.spell = false
-				vim.wo.number = false
-				vim.wo.relativenumber = false
 			end)
 		end, { desc = "Open fish terminal" })
 	end,
