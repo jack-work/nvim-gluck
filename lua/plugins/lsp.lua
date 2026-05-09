@@ -131,15 +131,12 @@ return {
 					vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename,
 						vim.tbl_extend("force", opts, { desc = "Rename symbol" }))
 
-					-- Formatting (your requested <leader>fo)
-					vim.keymap.set({ "n", "v" }, "<leader>fo", function()
-						vim.lsp.buf.format({ async = true })
-					end, vim.tbl_extend("force", opts, { desc = "Format code" }))
+					-- Formatting handled by conform.nvim (see conform.lua)
 
 					-- Hover and help
 					vim.keymap.set("n", "K", vim.lsp.buf.hover,
 						vim.tbl_extend("force", opts, { desc = "Show hover info" }))
-					vim.keymap.set("n", "<C-k>", vim.lsp.buf.signature_help,
+					vim.keymap.set("n", "<C-s>", vim.lsp.buf.signature_help,
 						vim.tbl_extend("force", opts, { desc = "Signature help" }))
 
 					-- Diagnostics
@@ -165,6 +162,9 @@ return {
 			vim.api.nvim_create_autocmd("BufWritePre", {
 				pattern = { "*.lua", "*.py", "*.js", "*.ts", "*.rs" },
 				callback = function()
+					if vim.b.disable_format_on_save then
+						return
+					end
 					vim.lsp.buf.format({ async = false })
 				end,
 			})
@@ -180,43 +180,53 @@ return {
 		},
 	},
 
-	-- Treesitter for enhanced syntax highlighting
+	-- Treesitter (main branch — requires Neovim 0.12+ and tree-sitter-cli)
 	{
 		"nvim-treesitter/nvim-treesitter",
-		event = { "BufReadPost", "BufNewFile" },
+		branch = "main",
+		lazy = false,
 		build = ":TSUpdate",
-		dependencies = {
-			"nvim-treesitter/nvim-treesitter-textobjects",
-		},
-		opts = {
-			highlight = { enable = true },
-			indent = { enable = true },
-			ensure_installed = {
+		config = function()
+			local ensure = {
 				"bash", "c", "html", "javascript", "json", "lua", "luadoc", "luap",
 				"markdown", "markdown_inline", "python", "query", "regex", "tsx",
 				"typescript", "vim", "vimdoc", "yaml", "go",
-			},
-			incremental_selection = {
-				enable = true,
-				keymaps = {
-					init_selection = "<C-space>",
-					node_incremental = "<C-space>",
-					scope_incremental = false,
-					node_decremental = "<bs>",
-				},
-			},
-			textobjects = {
-				move = {
-					enable = true,
-					goto_next_start = { ["]f"] = "@function.outer", ["]c"] = "@class.outer" },
-					goto_next_end = { ["]F"] = "@function.outer", ["]C"] = "@class.outer" },
-					goto_previous_start = { ["[f"] = "@function.outer", ["[c"] = "@class.outer" },
-					goto_previous_end = { ["[F"] = "@function.outer", ["[C"] = "@class.outer" },
-				},
-			},
-		},
-		config = function(_, opts)
-			require("nvim-treesitter.configs").setup(opts)
+			}
+			local installed = require("nvim-treesitter.config").get_installed()
+			local missing = vim.iter(ensure):filter(function(p)
+				return not vim.tbl_contains(installed, p)
+			end):totable()
+			if #missing > 0 then
+				require("nvim-treesitter").install(missing)
+			end
+
+			vim.api.nvim_create_autocmd("FileType", {
+				callback = function(args)
+					local lang = vim.treesitter.language.get_lang(vim.bo[args.buf].filetype)
+					if lang and pcall(vim.treesitter.start, args.buf, lang) then
+						vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+					end
+				end,
+			})
+		end,
+	},
+	{
+		"nvim-treesitter/nvim-treesitter-textobjects",
+		branch = "main",
+		dependencies = { "nvim-treesitter/nvim-treesitter" },
+		config = function()
+			local move = require("nvim-treesitter-textobjects.move")
+			local map = function(lhs, fn, q)
+				vim.keymap.set({ "n", "x", "o" }, lhs, function() fn(q) end)
+			end
+			map("]f", move.goto_next_start, "@function.outer")
+			map("]c", move.goto_next_start, "@class.outer")
+			map("]F", move.goto_next_end, "@function.outer")
+			map("]C", move.goto_next_end, "@class.outer")
+			map("[f", move.goto_previous_start, "@function.outer")
+			map("[c", move.goto_previous_start, "@class.outer")
+			map("[F", move.goto_previous_end, "@function.outer")
+			map("[C", move.goto_previous_end, "@class.outer")
 		end,
 	},
 
@@ -260,6 +270,7 @@ return {
 					end, { "i", "s" }),
 				}),
 				sources = cmp.config.sources({
+					{ name = "lazydev", group_index = 0 },
 					{ name = "nvim_lsp" },
 					{ name = "luasnip" },
 					{ name = "path" },

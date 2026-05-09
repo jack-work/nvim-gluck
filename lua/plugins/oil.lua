@@ -3,10 +3,30 @@ return {
 	---@module 'oil'
 	---@type oil.SetupOpts
 	opts = {
-		["g."] = { "actions.toggle_hidden", mode = "n" },
+		columns = {
+			"icon",
+			"size",
+			"mtime",
+		},
 		view_options = {
-			-- Show files and directories that start with "."
 			show_hidden = true,
+		},
+		keymaps = {
+			["g."] = { "actions.toggle_hidden", mode = "n" },
+			["<C-h>"] = false,
+			["<C-l>"] = false,
+			-- Remap the functionality elsewhere if you want it
+			["<leader>oh"] = { "actions.select", opts = { horizontal = true }, desc = "Open in horizontal split" },
+			["<leader>or"] = "actions.refresh",
+			["<leader>op"] = {
+				callback = function()
+					local oil = require("oil")
+					local path = oil.get_current_dir() .. oil.get_cursor_entry().name
+					vim.fn.setreg("+", path)
+					vim.notify("Copied: " .. path)
+				end,
+				desc = "Copy file path",
+			},
 		}
 	},
 	-- Optional dependencies
@@ -30,6 +50,19 @@ return {
 			desc = "Open Downloads folder"
 		},
 		{
+			"<leader>fif",
+			function()
+				local oil = require("oil")
+				local path = (oil.get_cursor_entry() or {}).path or oil.get_current_dir() or
+				    vim.fn.expand('%:p:h')
+				require("fzf-lua").files({
+					prompt_title = "finding files in the directory of the current buffer",
+					cwd = path
+				})
+			end,
+			desc = "Grep in directory"
+		},
+		{
 			"<leader>fig",
 			function()
 				local oil = require("oil")
@@ -43,6 +76,13 @@ return {
 			desc = "Grep in directory"
 		},
 		{
+			'<leader>h',
+			function()
+				local oil = require("oil")
+				oil.open('~')
+			end
+		},
+		{
 			'<leader>ep',
 			function()
 				local oil = require("oil")
@@ -54,11 +94,12 @@ return {
 			function() require("oil").open('~/.config') end
 		},
 		{
-			'<leader>op',
-			function()
-				local oil = require("oil");
-				vim.fn.setreg("*", oil.get_current_dir() .. oil.get_cursor_entry().name)
-			end
-		}
+			'<leader>local',
+			function() require("oil").open('~/.local') end
+		},
+		{
+			'<leader>dev',
+			function() require("oil").open('~/dev') end
+		},
 	},
 }

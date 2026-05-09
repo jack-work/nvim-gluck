@@ -44,7 +44,7 @@ return {
 				vim.tbl_deep_extend("force", opts, { desc = "LSP References" }))
 			vim.keymap.set("n", "<leader>vrn", function() vim.lsp.buf.rename() end,
 				vim.tbl_deep_extend("force", opts, { desc = "LSP Rename" }))
-			vim.keymap.set("i", "<C-h>", function() vim.lsp.buf.signature_help() end,
+			vim.keymap.set("i", "<C-s>", function() vim.lsp.buf.signature_help() end,
 				vim.tbl_deep_extend("force", opts, { desc = "LSP Signature Help" }))
 		end)
 

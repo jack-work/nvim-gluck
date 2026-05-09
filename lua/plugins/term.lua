@@ -50,11 +50,6 @@ return {
 			start_in_insert = true,
 		})
 
-		-- Create toggle function
-		function _TOGGLE_NODE_CLI()
-			nodeCLI:toggle()
-		end
-
 		-- Define the terminal instance for aichat
 		local aichat = Terminal:new({
 			cmd = "aichat -r coder",
@@ -105,7 +100,6 @@ return {
 
 		vim.keymap.set("t", "<ESC><ESC>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
 		-- Keymaps (fixed function names)
-		vim.keymap.set("n", "<leader>yy", "<cmd>lua _TOGGLE_NODE_CLI()<CR>")
 		vim.keymap.set("n", "<leader>ai", "<cmd>lua _TOGGLE_AICHAT()<CR>")
 		vim.keymap.set("n", "<leader>th", ":exe 'cd %:p:h' | terminal<CR>")
 
