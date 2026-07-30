@@ -24,7 +24,8 @@ return {
 			enabled = true,
 			timeout = 3000,
 			margin = { top = 0, right = 1, bottom = 0 },
-			style = "compact",
+			style = "fancy",
+			top_down = false,
 		},
 		picker = { enabled = true }, -- Fuzzy finder (like Telescope)
 		quickfile = { enabled = true }, -- Fast file loading
@@ -117,6 +118,30 @@ return {
 
 	-- Essential keybindings for snacks.nvim
 	keys = {
+		-- ─── Picker (replaces fzf-lua) ─────────────────────────────────
+		{ "<leader>ff", function() Snacks.picker.files() end,            desc = "Find files" },
+		{ "<leader>fg", function() Snacks.picker.grep() end,             desc = "Live grep (cwd)" },
+		{ "<leader>fb", function() Snacks.picker.buffers() end,          desc = "Find buffers" },
+		{ "<leader>fl", function() Snacks.picker.grep_buffers() end,     desc = "Grep open buffers" },
+		{ "<leader>f/", function() Snacks.picker.lines() end,            desc = "Search current buffer lines" },
+		{ "<leader>fk", function() Snacks.picker.keymaps() end,          desc = "Find keymaps" },
+		{ "<leader>fr", function() Snacks.picker.recent() end,           desc = "Recent files" },
+		{ "<leader>fh", function() Snacks.picker.help() end,             desc = "Help tags" },
+		{ "<leader>fc", function() Snacks.picker.commands() end,         desc = "Commands" },
+		{
+			"<leader>ft",
+			function()
+				vim.ui.input({ prompt = "Glob? " }, function(glob)
+					if not glob or glob == "" then return end
+					vim.ui.input({ prompt = "Grep for? " }, function(input)
+						if not input or input == "" then return end
+						Snacks.picker.grep({ args = { "-g", glob }, search = input })
+					end)
+				end)
+			end,
+			desc = "Grep with glob filter",
+		},
+
 		{ "<leader>z",  function() Snacks.zen() end,                     desc = "Toggle Zen Mode" },
 		{ "<leader>Z",  function() Snacks.zen.zoom() end,                desc = "Toggle Zoom" },
 		{ "<leader>sc", function() Snacks.scratch() end,                 desc = "Toggle Scratch Buffer" },

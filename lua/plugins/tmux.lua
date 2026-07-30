@@ -10,11 +10,12 @@ return {
 			multiplexer_integration = 'tmux',
 		})
 
-		-- Navigation keymaps (you already have these)
-		vim.keymap.set('n', '<C-h>', smart_splits.move_cursor_left, { desc = "Move to left split" })
-		vim.keymap.set('n', '<C-j>', smart_splits.move_cursor_down, { desc = "Move to bottom split" })
-		vim.keymap.set('n', '<C-k>', smart_splits.move_cursor_up, { desc = "Move to top split" })
-		vim.keymap.set('n', '<C-l>', smart_splits.move_cursor_right, { desc = "Move to right split" })
+		-- Navigation keymaps (n + t mode so they work inside terminal buffers too)
+		-- Plain Ctrl+HJKL (matches tmux smart-split bindings).
+		vim.keymap.set({ 'n', 't' }, '<C-h>', smart_splits.move_cursor_left, { desc = "Move to left split" })
+		vim.keymap.set({ 'n', 't' }, '<C-j>', smart_splits.move_cursor_down, { desc = "Move to bottom split" })
+		vim.keymap.set({ 'n', 't' }, '<C-k>', smart_splits.move_cursor_up, { desc = "Move to top split" })
+		vim.keymap.set({ 'n', 't' }, '<C-l>', smart_splits.move_cursor_right, { desc = "Move to right split" })
 
 		-- Resizing keymaps
 		vim.keymap.set('n', '<M-h>', smart_splits.resize_left, { desc = "Resize split left" })

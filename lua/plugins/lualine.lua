@@ -4,6 +4,17 @@ return {
 	dependencies = { 'nvim-tree/nvim-web-devicons', lazy = true },
 
 	event = 'VeryLazy', -- load only after UIEnter
+	config = function(_, opts)
+		require('lualine').setup(opts)
+		-- Force a redraw the instant macro recording starts/stops so the
+		-- indicator doesn't lag behind cursor motion.
+		vim.api.nvim_create_autocmd({ 'RecordingEnter', 'RecordingLeave' }, {
+			callback = function()
+				-- RecordingLeave fires *before* reg_recording() clears, so defer.
+				vim.schedule(function() require('lualine').refresh() end)
+			end,
+		})
+	end,
 	opts = function()
 		----------------------------------------------------------
 		-- 1. Custom colors: merge with the active colorscheme
@@ -49,6 +60,17 @@ return {
 			padding = { left = 1, right = 0 },
 		}
 
+		local macro = {
+			function()
+				local reg = vim.fn.reg_recording()
+				if reg == '' then return '' end
+				return '󰑊 REC @' .. reg
+			end,
+			cond = function() return vim.fn.reg_recording() ~= '' end,
+			color = { fg = '#ff5555', gui = 'bold' },
+			padding = { left = 1, right = 1 },
+		}
+
 		local filename = {
 			'filename',
 			path = 1, -- relative path
@@ -81,7 +103,7 @@ return {
 			},
 
 			sections = {
-				lualine_a = { mode },
+				lualine_a = { mode, macro },
 				lualine_b = { 'branch', diff },
 				lualine_c = { filename },
 				lualine_x = { diagnostics, 'filetype' },

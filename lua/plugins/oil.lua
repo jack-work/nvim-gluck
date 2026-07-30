@@ -15,7 +15,6 @@ return {
 			["g."] = { "actions.toggle_hidden", mode = "n" },
 			["<C-h>"] = false,
 			["<C-l>"] = false,
-			-- Remap the functionality elsewhere if you want it
 			["<leader>oh"] = { "actions.select", opts = { horizontal = true }, desc = "Open in horizontal split" },
 			["<leader>or"] = "actions.refresh",
 			["<leader>op"] = {
@@ -27,40 +26,29 @@ return {
 				end,
 				desc = "Copy file path",
 			},
-		}
+		},
 	},
-	-- Optional dependencies
 	dependencies = { { "echasnovski/mini.icons", opts = {} } },
-	-- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if you prefer nvim-web-devicons
-	-- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
 	lazy = false,
-	keys = { { "<leader>-", ":Oil<CR>", desc = "Open parent directory" },
-		{
-			"<leader>src",
-			function()
-				require("oil").open('~/src')
-			end,
-			desc = "Open src folder"
-		},
-		{
-			"<leader>down",
-			function()
-				require("oil").open('~/Downloads')
-			end,
-			desc = "Open Downloads folder"
-		},
+	keys = {
+		{ "<leader>-",  ":Oil<CR>",                                                                     desc = "Open parent directory" },
+		{ "<leader>jn", function() require("oil").open(vim.env.HOME .. "/notes") end,                   desc = "Jump: ~/notes" },
+		{ "<leader>jh", function() require("oil").open(vim.env.HOME) end,                               desc = "Jump: home" },
+		{ "<leader>jc", function() require("oil").open(vim.env.HOME .. "/.config") end,                 desc = "Jump: ~/.config" },
+		{ "<leader>jl", function() require("oil").open(vim.env.HOME .. "/.local") end,                  desc = "Jump: ~/.local" },
+		{ "<leader>jd", function() require("oil").open(vim.env.HOME .. "/dev") end,                     desc = "Jump: ~/dev" },
+		{ "<leader>jD", function() require("oil").open(vim.env.HOME .. "/Downloads") end,               desc = "Jump: ~/Downloads" },
+		{ "<leader>jp", function() require("oil").open(vim.fn.stdpath("config") .. "/lua/plugins") end, desc = "Jump: nvim plugins" },
+
 		{
 			"<leader>fif",
 			function()
 				local oil = require("oil")
 				local path = (oil.get_cursor_entry() or {}).path or oil.get_current_dir() or
 				    vim.fn.expand('%:p:h')
-				require("fzf-lua").files({
-					prompt_title = "finding files in the directory of the current buffer",
-					cwd = path
-				})
+				Snacks.picker.files({ cwd = path })
 			end,
-			desc = "Grep in directory"
+			desc = "Find files in oil/buffer dir",
 		},
 		{
 			"<leader>fig",
@@ -68,38 +56,9 @@ return {
 				local oil = require("oil")
 				local path = (oil.get_cursor_entry() or {}).path or oil.get_current_dir() or
 				    vim.fn.expand('%:p:h')
-				require("fzf-lua").live_grep({
-					prompt_title = "grepping the directory of the current buffer",
-					cwd = path
-				})
+				Snacks.picker.grep({ cwd = path })
 			end,
-			desc = "Grep in directory"
-		},
-		{
-			'<leader>h',
-			function()
-				local oil = require("oil")
-				oil.open('~')
-			end
-		},
-		{
-			'<leader>ep',
-			function()
-				local oil = require("oil")
-				oil.open(vim.fn.stdpath('config') .. '/lua/plugins')
-			end
-		},
-		{
-			'<leader>conf',
-			function() require("oil").open('~/.config') end
-		},
-		{
-			'<leader>local',
-			function() require("oil").open('~/.local') end
-		},
-		{
-			'<leader>dev',
-			function() require("oil").open('~/dev') end
+			desc = "Grep in oil/buffer dir",
 		},
 	},
 }

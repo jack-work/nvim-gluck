@@ -1,123 +1,91 @@
+-- Terminal config — declarative terminal definitions powered by lua/terminal/
 return {
 	"akinsho/toggleterm.nvim",
+	lazy = false,
 	config = function()
-		local status, toggleterm = pcall(require, 'toggleterm')
-		if (not status) then return end
-
-		-- Fish shell configuration
-		vim.cmd("let &shell = 'fish'")
-		vim.cmd("let &shellcmdflag = '-c'")
-		vim.cmd("let &shellredir = '>%s 2>&1'")
-		vim.cmd("let &shellpipe = '2>&1 | tee'")
-		vim.cmd("set shellquote= shellxquote=")
-
-		toggleterm.setup({
-			size = 10,
-			open_mapping = [[<C-3>]],
-			hide_numbers = true,
-			shade_filetypes = {},
-			shade_terminals = true,
-			shading_factor = 2,
-			start_in_insert = true,
-			insert_mappings = true,
-			persist_size = true,
-			close_on_exit = true,
-			direction = 'float',
-			shell = 'fish', -- Explicitly set fish as the shell
-			float_opts = {
-				border = "curved",
-				winblend = 0,
-				highlights = {
-					border = "Normal",
-					background = "Normal"
-				}
-			}
-		})
-
-		local Terminal = require('toggleterm.terminal').Terminal
-
-		-- Define the terminal instance for yipyap
-		local nodeCLI = Terminal:new({
-			cmd = "yipyap",
-			direction = "float",
-			shell = 'fish', -- Use fish for this terminal too
-			float_opts = {
-				border = "curved",
-				width = 80,
-				height = 50,
+		require("terminal").setup({
+			-- Shell config (fish on Linux)
+			shell = {
+				shell = "fish",
+				shellcmdflag = "-c",
+				shellredir = ">%s 2>&1",
+				shellpipe = "2>&1 | tee",
+				shellquote = "",
+				shellxquote = "",
 			},
-			close_on_exit = true,
-			start_in_insert = true,
-		})
+			-- argv used by termopen for direct invocation
+			shell_argv = { "fish" },
 
-		-- Define the terminal instance for aichat
-		local aichat = Terminal:new({
-			cmd = "aichat -r coder",
-			direction = "float",
-			shell = 'fish', -- Use fish for this terminal too
-			float_opts = {
-				border = "curved",
-				width = 150,
-				height = 50,
+			toggleterm = {
+				size = 10,
+				hide_numbers = true,
+				shade_terminals = true,
+				shading_factor = 2,
+				start_in_insert = true,
+				insert_mappings = true,
+				persist_size = true,
+				close_on_exit = true,
+				direction = "float",
+				float_opts = {
+					border = "curved",
+					winblend = 0,
+					highlights = { border = "Normal", background = "Normal" },
+				},
 			},
-			close_on_exit = true,
-			start_in_insert = true,
+
+			terminals = {
+				{
+					name = "aichat",
+					keymap = "<leader>ai",
+					cmd = "aichat -r coder",
+					desc = "Toggle AI Chat",
+					singleton = true,
+					use_ctrl = true,
+					direction = "float",
+					float_opts = { border = "curved", width = 150, height = 50 },
+				},
+				{
+					name = "yipyap",
+					keymap = "<leader>yy",
+					cmd = "yipyap",
+					desc = "Toggle yipyap",
+					singleton = true,
+					direction = "float",
+					float_opts = { border = "curved", width = 80, height = 50 },
+				},
+			},
+
+			custom_keymaps = {
+				{
+					mode = "n",
+					keymap = "<leader>th",
+					desc = "Open terminal in current dir",
+					action = function()
+						vim.cmd("enew")
+						vim.fn.termopen("fish", { cwd = vim.fn.expand("%:p:h") })
+						vim.cmd.startinsert()
+					end,
+				},
+				{
+					mode = "n",
+					keymap = "<leader>tm",
+					desc = "Open terminal here (oil-aware)",
+					action = function()
+						local ok, oil = pcall(require, "oil")
+						local dir
+						if ok and oil.get_current_dir then
+							dir = oil.get_current_dir()
+						else
+							dir = vim.fn.expand("%:p:h")
+						end
+						vim.cmd.enew()
+						vim.fn.termopen("fish", { cwd = dir })
+						vim.cmd.startinsert()
+					end,
+				},
+			},
+
+			override_terminal = true,
 		})
-
-		-- Create toggle function
-		function _TOGGLE_AICHAT()
-			aichat:toggle()
-		end
-
-		-- Custom terminal function that uses fish
-		local function custom_terminal()
-			vim.cmd('enew')
-			local job_id = vim.fn.termopen('fish', {
-				env = {
-					-- Preserve important environment variables for fish
-					TERM = vim.env.TERM or 'xterm-256color',
-					COLORTERM = vim.env.COLORTERM,
-					-- Add any other fish-specific env vars you need
-				}
-			})
-
-			vim.schedule(function()
-				vim.bo.syntax = ''
-				vim.wo.signcolumn = 'no'
-				vim.wo.spell = false
-			end)
-		end
-
-		-- Override the :terminal command
-		vim.api.nvim_create_user_command('Terminal', custom_terminal, {
-			nargs = 0,
-			force = true
-		})
-
-		-- Create abbreviations to intercept :terminal
-		vim.cmd('cabbrev terminal Terminal')
-		vim.cmd('cabbrev term Terminal')
-
-		vim.keymap.set("t", "<ESC><ESC>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
-		-- Keymaps (fixed function names)
-		vim.keymap.set("n", "<leader>ai", "<cmd>lua _TOGGLE_AICHAT()<CR>")
-		vim.keymap.set("n", "<leader>th", ":exe 'cd %:p:h' | terminal<CR>")
-
-		-- Additional keymap for quick fish terminal
-		vim.keymap.set("n", "<leader>tm", function()
-			vim.cmd('enew')
-			local job_id = vim.fn.termopen('fish', {
-				env = {
-					TERM = vim.env.TERM or 'xterm-256color',
-					COLORTERM = vim.env.COLORTERM,
-				}
-			})
-
-			vim.schedule(function()
-				vim.bo.syntax = ''
-				vim.wo.signcolumn = 'no'
-				vim.wo.spell = false
-			end)
-		end, { desc = "Open fish terminal" })
 	end,
 }

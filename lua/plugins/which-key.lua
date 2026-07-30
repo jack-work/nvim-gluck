@@ -10,18 +10,23 @@ return {
 			group = "+",
 		},
 		spec = {
+			{ "<leader>c", group = "code" },
 			{ "<leader>f", group = "find/files" },
+			{ "<leader>F", group = "figaro", mode = { "n", "v" } },
 			{ "<leader>g", group = "git" },
-			{ "<leader>v", group = "lsp" },
+			{ "<leader>h", group = "harpoon (grapple)" },
+			{ "<leader>i", group = "insert" },
+			{ "<leader>j", group = "jump (filesystem)" },
 			{ "<leader>R", group = "http requests" },
+			{ "<leader>t", group = "terminal" },
+			{ "<leader>u", group = "toggle/UI" },
+			{ "<leader>x", group = "diagnostics/trouble" },
 		},
 	},
 	keys = {
 		{
 			"<leader>?",
-			function()
-				require("which-key").show({ global = false })
-			end,
+			function() require("which-key").show({ global = false }) end,
 			desc = "Buffer local keymaps",
 		},
 	},
