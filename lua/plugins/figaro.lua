@@ -1,6 +1,11 @@
+-- figaro.nvim is a LOCAL plugin (not published). Guard on its presence so this
+-- config loads cleanly on machines that do not have it checked out.
+local figaro_dir = vim.fn.expand("~/dev/figaro.nvim")
+
 return {
-	dir = vim.fn.expand("~/dev/figaro.nvim"),
+	dir = figaro_dir,
 	name = "figaro.nvim",
+	cond = vim.fn.isdirectory(figaro_dir) == 1,
 	cmd = { "FigAt", "FigQ", "FigListen", "FigStatus", "FigDetach" },
 	opts = {},
 	keys = {
