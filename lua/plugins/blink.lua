@@ -26,6 +26,15 @@ return {
 				selection = { preselect = true, auto_insert = true },
 			},
 		},
+		-- Cmdline: blink v2 enables completion here BY DEFAULT and inherits
+		-- auto_insert, which rewrites `:term` into `:terminal` as you type.
+		-- Keep the menu available on <Tab>, but never rewrite what was typed.
+		cmdline = {
+			completion = {
+				list = { selection = { preselect = false, auto_insert = false } },
+				menu = { auto_show = false },
+			},
+		},
 		signature = { enabled = true },
 		snippets = { preset = "luasnip" },
 		sources = {
