@@ -17,7 +17,7 @@ snippets/             LuaSnip snippets, loaded by filetype
 | file | what it owns |
 |---|---|
 | `lazy.lua` | bootstraps lazy.nvim, sets `<leader>`. Runs before any plugin. |
-| `clipboard.lua` | cross-platform yank/paste. Explains why OSC 52 *paste* is banned. |
+| `clipboard.lua` | cross-platform yank/paste, and self-repair for stale Wayland sockets |
 | `options.lua` | plain `vim.opt`, wrap rules, filetype detection, provider opt-outs |
 | `indent.lua` | **one table**: every language indents the way its own formatter does |
 | `keymaps.lua` | global maps only |
@@ -60,6 +60,35 @@ handler. Buffer-local maps live next to what they belong to (LSP maps in
    server to mason's `ensure_installed`. **Install the parser**, or the
    `#missing > 0` branch loads `nvim-treesitter.install` on every startup.
 
+## Clipboard
+
+`unnamedplus`: `y`/`d`/`c`/`x` write the system clipboard, `p` reads it. On
+Wayland that resolves to `wl-copy`/`wl-paste`.
+
+```
+:ClipboardInfo    which provider, which socket, and a live round-trip probe
+```
+
+**`has('clipboard_working')` does not mean the clipboard works.** It means a
+tool was found on `$PATH`. The provider's Wayland test only requires
+`$WAYLAND_DISPLAY` to be *non-empty* — nothing checks the socket it names still
+exists. So when the compositor restarts, or a tmux server outlives the session
+it started in, every nvim in an old pane keeps a stale `$WAYLAND_DISPLAY`,
+`wl-copy` is still "chosen", it fails silently against a dead socket, and yanks
+vanish with no error anywhere.
+
+`config/clipboard.lua` checks the socket itself (one `fs_stat`) and, inside
+tmux, re-reads `WAYLAND_DISPLAY` from the tmux session environment — the value
+`update-environment` refreshes on attach but cannot push into an
+already-running process. It repairs at startup and on `FocusGained`/`VimResume`,
+and falls back to an OSC 52 copy mirror only when the clipboard is genuinely
+unreachable.
+
+Note that `unnamedplus` means **deletes also overwrite the clipboard** — `d`,
+`c`, `x` all write to `+`. If that bites, the usual remedy is routing small
+deletes to the black hole register (`vim.keymap.set("n", "x", '"_x')`) rather
+than abandoning `unnamedplus`.
+
 ## Housekeeping
 
 ```
@@ -78,13 +107,15 @@ truncates anything over 50 MB at startup.
 
 ## Startup
 
-~55 ms. Two things reliably cost more than they look:
+~46 ms. Three things reliably cost more than they look:
 
 - A treesitter `ensure` list containing parsers that are not installed forces
   `nvim-treesitter.install` to load every startup (+1.4 ms).
 - `opts = { ... require("plugin.mod") ... }` in a lazy spec runs that `require`
   during startup, because lazy.nvim evaluates spec files eagerly. Use
   `opts = function() return { ... } end`.
+- `lazy = false` on a plugin that only provides keymaps. smart-splits cost
+  4.83 ms that way; `keys = {}` moved it to first use.
 
 Measure before and after, don't guess:
 
