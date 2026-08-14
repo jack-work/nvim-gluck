@@ -24,6 +24,13 @@ return {
 	{
 		"mason-org/mason-lspconfig.nvim",
 		dependencies = { "mason.nvim", "neovim/nvim-lspconfig" },
+		-- Matches nvim-lspconfig's own trigger. This plugin's whole job is to
+		-- call vim.lsp.enable() for installed servers, which only matters once
+		-- a real file is open; vim.lsp.enable() registers a FileType autocmd,
+		-- and FileType fires after BufReadPre, so the first buffer still gets
+		-- its server. Loading it eagerly pulled in mason-core, mason-registry
+		-- and mason.nvim for 2.5 ms before any buffer existed.
+		event = { "BufReadPre", "BufNewFile" },
 		opts = {
 			ensure_installed = { "lua_ls", "terraformls", "pyright", "gopls", "taplo" },
 			-- rustaceanvim owns rust-analyzer end to end (see plugins/rust.lua).

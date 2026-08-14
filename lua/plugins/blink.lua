@@ -1,6 +1,12 @@
 return {
 	"saghen/blink.cmp",
 	version = "2.*",
+	-- Completion is not needed until you are typing into something. This is
+	-- the pattern LazyVim uses: InsertEnter covers buffer completion,
+	-- CmdlineEnter covers `:` completion, and between them there is no moment
+	-- where blink is wanted but absent. Loading eagerly cost 3.75 ms, plus
+	-- LuaSnip (1.89 ms) and friendly-snippets, which come along as dependencies.
+	event = { "InsertEnter", "CmdlineEnter" },
 	build = function()
 		-- v2 uses Lua-driven build instead of cargo
 		require("blink.cmp").build():wait(60000)

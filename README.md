@@ -107,7 +107,7 @@ truncates anything over 50 MB at startup.
 
 ## Startup
 
-~46 ms. Three things reliably cost more than they look:
+~23 ms bare, ~55 ms opening a file. Things that reliably cost more than they look:
 
 - A treesitter `ensure` list containing parsers that are not installed forces
   `nvim-treesitter.install` to load every startup (+1.4 ms).
@@ -116,6 +116,15 @@ truncates anything over 50 MB at startup.
   `opts = function() return { ... } end`.
 - `lazy = false` on a plugin that only provides keymaps. smart-splits cost
   4.83 ms that way; `keys = {}` moved it to first use.
+- A spec with **no lazy trigger at all** is eager. That is how blink.cmp,
+  LuaSnip and mason-lspconfig were loading at startup — and mason-lspconfig
+  dragged mason-core, mason-registry and nvim-lspconfig in with it. Giving the
+  three of them `event`/`lazy = true` took bare startup from 46 ms to 23 ms.
+  Check with `:Lazy profile`, or list what loaded:
+
+  ```lua
+  :lua for n,p in pairs(require("lazy.core.config").plugins) do if p._.loaded then print(n) end end
+  ```
 
 Measure before and after, don't guess:
 
