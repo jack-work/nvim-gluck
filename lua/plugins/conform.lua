@@ -91,6 +91,18 @@ return {
 			end
 		end
 
+		-- Like guard(), but the names are *alternatives* in preference order:
+		-- run the first one that works, not all of them. Use for cases like
+		-- prettierd -> prettier, or ruff_format -> black, where running both
+		-- would just reformat the same buffer twice.
+		local function first(...)
+			local pick = guard(...)
+			return function(bufnr)
+				local usable = pick(bufnr)
+				return usable[1] and { usable[1] } or {}
+			end
+		end
+
 		-- Tool installed mid-session? Forget the verdicts.
 		vim.api.nvim_create_user_command("FormatRecheck", function()
 			runnable, warned = {}, {}
@@ -111,15 +123,50 @@ return {
 				sqlfluff = {
 					args = { 'format', '--dialect', 'mysql', '-' },
 				},
+				-- shfmt indents with tabs by default. indent.lua says 2 spaces
+				-- for shell (Google's style, and what shellcheck examples use),
+				-- so tell shfmt the same thing rather than letting the two
+				-- disagree on every save. -ci indents switch cases.
+				shfmt = {
+					prepend_args = { "-i", "2", "-ci" },
+				},
 			},
 			formatters_by_ft = {
-				python = guard("black"),
+				-- Each entry must agree with lua/config/indent.lua, or the
+				-- buffer will reindent itself out from under you on save.
+				--
+				-- Absent from this list on purpose:
+				--   rust  — rust-analyzer runs rustfmt with the crate's edition
+				--           and rustfmt.toml; a bare `rustfmt` here would
+				--           assume edition 2015.
+				--   go    — gopls formats with gofumpt (see lsp.lua) and the
+				--           organizeImports action handles the import block.
+				-- Both fall through to lsp_format = "fallback" below.
+				python = first("ruff_format", "black"),
 				lua = guard("stylua"),
 				markdown = guard("mdformat"),
 				jsonl = guard("jq_jsonl"),
 				sql = guard("sql_formatter"),
 				terraform = guard("terraform_fmt"),
 				hcl = guard("terraform_fmt"),
+				toml = guard("taplo"),
+				nix = first("nixfmt", "alejandra", "nixpkgs_fmt"),
+				sh = guard("shfmt"),
+				bash = guard("shfmt"),
+				zsh = guard("shfmt"),
+				-- prettier's territory. prettierd is the same formatter behind
+				-- a daemon — an order of magnitude faster on save.
+				javascript = first("prettierd", "prettier"),
+				javascriptreact = first("prettierd", "prettier"),
+				typescript = first("prettierd", "prettier"),
+				typescriptreact = first("prettierd", "prettier"),
+				json = first("prettierd", "prettier"),
+				jsonc = first("prettierd", "prettier"),
+				yaml = first("prettierd", "prettier"),
+				css = first("prettierd", "prettier"),
+				scss = first("prettierd", "prettier"),
+				html = first("prettierd", "prettier"),
+				graphql = first("prettierd", "prettier"),
 			},
 			format_on_save = function(bufnr)
 				if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then

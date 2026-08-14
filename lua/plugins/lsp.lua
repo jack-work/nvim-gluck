@@ -23,8 +23,12 @@ return {
 		"williamboman/mason-lspconfig.nvim",
 		dependencies = { "mason.nvim", "neovim/nvim-lspconfig" },
 		opts = {
-			ensure_installed = { "lua_ls", "terraformls", "pyright" },
-			automatic_enable = true,
+			ensure_installed = { "lua_ls", "terraformls", "pyright", "gopls", "taplo" },
+			-- rustaceanvim owns rust-analyzer end to end (see plugins/rust.lua).
+			-- Letting mason-lspconfig also vim.lsp.enable() it starts a second,
+			-- unconfigured client: duplicate diagnostics, duplicate completions,
+			-- and none of the rustaceanvim commands.
+			automatic_enable = { exclude = { "rust_analyzer" } },
 		},
 	},
 
@@ -88,6 +92,77 @@ return {
 				},
 			})
 
+			-- gopls: the defaults are conservative. These are the settings that
+			-- turn it into an actual Go IDE — staticcheck, the analyzers that
+			-- catch real bugs (shadow, nilness, unusedwrite), and inlay hints.
+			vim.lsp.config("gopls", {
+				settings = {
+					gopls = {
+						gofumpt = true, -- stricter gofmt; what most Go repos use
+						staticcheck = true,
+						usePlaceholders = true,
+						completeUnimported = true,
+						semanticTokens = true,
+						analyses = {
+							nilness = true,
+							shadow = true,
+							unusedparams = true,
+							unusedwrite = true,
+							useany = true,
+							unusedvariable = true,
+						},
+						hints = {
+							assignVariableTypes = true,
+							compositeLiteralFields = true,
+							compositeLiteralTypes = true,
+							constantValues = true,
+							functionTypeParameters = true,
+							parameterNames = true,
+							rangeVariableTypes = true,
+						},
+						-- Without this, gopls silently ignores files behind
+						-- build tags — the "undefined: Foo" mystery on
+						-- //go:build integration files.
+						buildFlags = { "-tags=integration" },
+						directoryFilters = { "-.git", "-node_modules", "-vendor" },
+					},
+				},
+			})
+
+			-- Go: organize imports on save.
+			--
+			-- gopls formats via textDocument/formatting (conform's lsp_format
+			-- fallback picks that up), but adding and removing imports is a
+			-- *code action*, source.organizeImports, which nothing calls
+			-- automatically. This is the goimports behaviour everyone expects
+			-- from a Go editor and the reason `go build` fails on unused
+			-- imports right after you delete a line.
+			--
+			-- Applied synchronously before conform's own BufWritePre runs, so
+			-- the import block is fixed first and then formatted.
+			vim.api.nvim_create_autocmd("BufWritePre", {
+				group = vim.api.nvim_create_augroup("UserGoImports", { clear = true }),
+				pattern = { "*.go" },
+				callback = function(ev)
+					if vim.g.disable_autoformat or vim.b[ev.buf].disable_autoformat then
+						return
+					end
+					local params = vim.lsp.util.make_range_params(0, "utf-16")
+					params.context = { only = { "source.organizeImports" }, diagnostics = {} }
+					local results = vim.lsp.buf_request_sync(
+						ev.buf, "textDocument/codeAction", params, 1000)
+					for client_id, res in pairs(results or {}) do
+						for _, action in pairs(res.result or {}) do
+							if action.edit then
+								local client = vim.lsp.get_client_by_id(client_id)
+								vim.lsp.util.apply_workspace_edit(
+									action.edit, client and client.offset_encoding or "utf-16")
+							end
+						end
+					end
+				end,
+			})
+
 			-- LSP keymaps on attach.
 			-- Nvim 0.11+ ships native defaults: K, grr, gri, grn, gra, gO, [d, ]d.
 			-- Only bind keys that aren't natively covered.
@@ -111,24 +186,6 @@ return {
 							vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
 						end, "Toggle inlay hints")
 					end
-
-					-- ══════════════════════════════════════════════════════════════
-					-- TEMPORARY MUSCLE-MEMORY NAGS — REMOVE AFTER 2026-08-01
-					-- ══════════════════════════════════════════════════════════════
-					-- Old custom mappings that shadowed Nvim 0.11+ defaults.
-					-- These print a nag and still execute the action so I can relearn.
-					local function nag(mode, old, new, action)
-						vim.keymap.set(mode, old, function()
-							vim.notify("use `" .. new .. "` (Nvim native)", vim.log.levels.WARN)
-							action()
-						end, vim.tbl_extend("force", buf_opts, { desc = "NAG: " .. old .. " → " .. new }))
-					end
-					nag("n",          "gr",          "grr", vim.lsp.buf.references)
-					nag("n",          "gi",          "gri", vim.lsp.buf.implementation)
-					nag("n",          "<leader>rn",  "grn", vim.lsp.buf.rename)
-					nag({ "n", "v" }, "<leader>ca",  "gra", vim.lsp.buf.code_action)
-					nag("n",          "<leader>ds",  "gO",  vim.lsp.buf.document_symbol)
-					-- ══════════════════════════════════════════════════════════════
 				end,
 			})
 		end,
@@ -145,6 +202,13 @@ return {
 				"bash", "c", "html", "javascript", "json", "lua", "luadoc", "luap",
 				"markdown", "markdown_inline", "python", "query", "regex", "tsx",
 				"typescript", "vim", "vimdoc", "yaml", "go",
+				-- Rust + the formats it lives in
+				"rust", "toml", "ron",
+				-- Go's satellite files (gopls diagnoses these; TS highlights them)
+				"gomod", "gosum", "gowork", "gotmpl",
+				-- The rest of the daily rotation
+				"nix", "terraform", "hcl", "dockerfile", "make",
+				"diff", "git_config", "gitcommit", "gitignore",
 			}
 			local installed = require("nvim-treesitter.config").get_installed()
 			local missing = vim.iter(ensure):filter(function(p)

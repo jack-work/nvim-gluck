@@ -95,31 +95,10 @@ end
 vim.opt.number = true
 vim.opt.relativenumber = true
 
--- Indentation: <Tab> inserts spaces; one indent level == 8 columns
--- (matches Neovim's historical default tab width — wider, airier blocks).
-vim.opt.expandtab = true   -- <Tab> -> spaces
-vim.opt.tabstop = 8        -- visual width of a literal \t
-vim.opt.shiftwidth = 8     -- size of >>, <<, autoindent step
-vim.opt.softtabstop = 8    -- <Tab>/<BS> in insert mode operate on 8 spaces
-vim.opt.smartindent = true
--- Per-filetype overrides: languages that *require* real tabs, or have
--- strong community conventions for narrower indents.
-vim.api.nvim_create_autocmd('FileType', {
-	pattern = { 'go', 'make', 'gitconfig' },
-	callback = function()
-		vim.bo.expandtab = false  -- real tabs
-		vim.bo.tabstop = 8
-		vim.bo.shiftwidth = 8
-	end,
-})
-vim.api.nvim_create_autocmd('FileType', {
-	pattern = { 'lua', 'yaml', 'json', 'html', 'css', 'javascript', 'typescript' },
-	callback = function()
-		vim.bo.tabstop = 2
-		vim.bo.shiftwidth = 2
-		vim.bo.softtabstop = 2
-	end,
-})
+-- Indentation: one table, one rule — match each language's own formatter.
+-- See lua/config/indent.lua for the reasoning and :IndentInfo to ask any
+-- buffer why it indents the way it does.
+require('config.indent').setup()
 -- Soft wrapping: break at word boundaries rather than mid-word, and keep
 -- continuation lines aligned with the indent of the line they belong to.
 vim.opt.linebreak = true

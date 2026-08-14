@@ -18,6 +18,7 @@ return {
 			{ "<leader>i", group = "insert" },
 			{ "<leader>j", group = "jump (filesystem)" },
 			{ "<leader>R", group = "http requests" },
+			{ "<leader>r", group = "rust/crates" },
 			{ "<leader>t", group = "terminal" },
 			{ "<leader>u", group = "toggle/UI" },
 			{ "<leader>x", group = "diagnostics/trouble" },
