@@ -33,86 +33,46 @@ return {
 		scroll = { enabled = true }, -- Smooth scrolling
 		statuscolumn = { enabled = true }, -- Enhanced status column
 		words = { enabled = true }, -- Highlight word under cursor
-
-		-- NEW ENHANCEMENTS
-		-- Better command mode with command palette
-		command = {
-			enabled = true,
-			-- Command palette for better command discovery
-			palette = {
-				enabled = true,
-				auto_show = false, -- Show automatically when typing commands
-			}
-		},
-
-		-- Function hierarchy breadcrumbs
-		breadcrumbs = {
-			enabled = true,
-			-- Show current function/class context
-			separator = " › ",
-			style = "float", -- or "inline"
-			auto_hide = false,
-		},
+		animate = { enabled = false }, -- Animations
 
 		-- Lazygit integration
 		lazygit = {
-			enabled = true,
-			-- Configuration for lazygit integration
-			configure = true, -- Let snacks configure lazygit for better integration
-			-- Custom lazygit config
+			configure = true, -- let snacks write nvim-remote + theme into lazygit's config
 			config = {
 				os = { editPreset = "nvim-remote" },
 				gui = {
 					nerdFontsVersion = "3",
-					border = "rounded"
-				}
+					border = "rounded",
+				},
 			},
 		},
 
-		-- Git integration enhancements
-		git = {
-			enabled = true,
-			-- Enhanced git features
-			blame_line = { enabled = true },
-			browse = { enabled = true },
-		},
-
-		-- Lualine integration components
-		statusline = {
-			enabled = true,
-			-- Components that can be used in lualine
-			sections = {
-				breadcrumbs = true,
-				git_status = true,
-				diagnostics = true,
-			}
-		},
-
-		-- Enhanced terminal for lazygit and other tools
 		terminal = {
-			enabled = true,
-			-- Better terminal integration
 			win = {
 				style = "minimal",
 				border = "rounded",
 				title_pos = "center",
-			}
+			},
 		},
 
-		-- Optional plugins (enable as needed)
-		animate = { enabled = false }, -- Animations
-		zen = { enabled = false }, -- Zen mode
+		-- Not listed here, on purpose: zen, scratch, rename, bufdelete,
+		-- gitbrowse, git.blame_line. Those are on-demand APIs, not modules with
+		-- setup() side effects — snacks loads them the moment you call them, so
+		-- an `enabled` flag is meaningless. The old `zen = { enabled = false }`
+		-- sat next to a <leader>z keymap that calls Snacks.zen(); the keymap
+		-- worked, which is what made the flag look load-bearing.
+		--
+		-- Removed as fabricated: `command`/`palette`, `breadcrumbs`,
+		-- `statusline`, `git.blame_line`, `git.browse`, `styles.breadcrumbs`.
+		-- snacks.nvim has no such options. Unknown keys are silently ignored,
+		-- so this config had been doing nothing for as long as it existed —
+		-- compare `ls ~/.local/share/nvim/lazy/snacks.nvim/lua/snacks/` against
+		-- anything you are about to add here.
 
-		-- Styling
 		styles = {
 			notification = {
-				wo = { wrap = true } -- Wrap notifications
+				wo = { wrap = true }, -- Wrap notifications
 			},
-			breadcrumbs = {
-				-- Style for breadcrumbs
-				wo = { winblend = 10 },
-				border = "rounded",
-			}
 		},
 	},
 
@@ -179,29 +139,9 @@ return {
 		}
 	},
 
-	-- OPTIONAL: If you're using lualine, add this configuration
-	config = function(_, opts)
-		require("snacks").setup(opts)
-
-		-- Lualine integration example
-		-- Add this to your lualine config:
-		--[[
-		require('lualine').setup({
-			sections = {
-				lualine_c = {
-					{
-						function() return require("snacks").statusline.breadcrumbs() end,
-						cond = function() return require("snacks").statusline.has_breadcrumbs() end,
-					}
-				},
-				lualine_x = {
-					{
-						function() return require("snacks").statusline.git_status() end,
-						cond = function() return require("snacks").statusline.has_git() end,
-					}
-				},
-			}
-		})
-		--]]
-	end,
+	-- No `config` function needed: lazy.nvim calls require("snacks").setup(opts)
+	-- for us. The block that used to live here was a commented-out lualine
+	-- recipe calling snacks.statusline.breadcrumbs() / .git_status(), which are
+	-- not part of snacks either. If you want a breadcrumb in lualine, the
+	-- working options are nvim-navic or lualine's own `filename` with path=3.
 }

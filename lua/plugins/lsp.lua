@@ -1,7 +1,9 @@
 return {
-	-- Mason
+	-- Mason. The repo moved from williamboman/ to the mason-org/ organisation
+	-- (mason 2.x); GitHub still redirects the old URL, which is why this kept
+	-- working, but redirects are not a dependency to rely on.
 	{
-		"williamboman/mason.nvim",
+		"mason-org/mason.nvim",
 		cmd = "Mason",
 		keys = {
 			{ "<leader>cm", "<cmd>Mason<cr>", desc = "Mason" },
@@ -20,7 +22,7 @@ return {
 
 	-- mason-lspconfig: auto-enables installed servers via vim.lsp.enable() (Nvim 0.11+)
 	{
-		"williamboman/mason-lspconfig.nvim",
+		"mason-org/mason-lspconfig.nvim",
 		dependencies = { "mason.nvim", "neovim/nvim-lspconfig" },
 		opts = {
 			ensure_installed = { "lua_ls", "terraformls", "pyright", "gopls", "taplo" },
